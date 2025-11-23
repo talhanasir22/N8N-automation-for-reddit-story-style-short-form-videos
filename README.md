@@ -1,1 +1,90 @@
-🎥 Reddit - Video Generation WorkflowThis n8n workflow is designed to automate the process of creating engaging, short-form video content (like TikToks or Instagram Reels) from text inputs. It combines a user-provided background video with Text-to-Speech (TTS) audio and automatically adds dynamic, captioned subtitles before saving the final video URL.Workflow NameReddit - Video🎯 PurposeTo quickly generate high-quality, vertically-oriented (1080x1920) videos by combining:A user-uploaded background video.Text-to-Speech audio generated from a title and body script.Automatically generated dynamic captions/subtitles.A title card image (implied, though the full title card creation logic is split).The workflow saves all progress and the final video URL to a Baserow database.🛠️ PrerequisitesTo run this workflow, you need to have the following services or credentials set up:n8n Instance: Running the workflow.S3/MinIO Account (S3 account): For storing the uploaded background video, the generated TTS audio, and the final video.Baserow Account (Baserow account 2): A database is required to track the video generation process (URLs, status, execution ID).Media Processing API: This workflow relies heavily on custom external HTTP services for video and audio processing, specifically:TTS Service: http://173.249.21.108:8880/v1/audio/speechFFmpeg/Video Composition Service: http://173.249.21.108:8080/v1/ffmpeg/composeCaptioning Service: http://173.249.21.108:8080/v1/video/captionNote: These services require an x-api-key header for authentication.🚀 Workflow Steps (High-Level)The workflow is divided into several main stages:Input & Storage: User submits text and video via a Form Trigger.Database Tracking: Initial row creation in Baserow to track the process.Audio Generation (TTS): Convert the input text into a speech audio file.Video Assembly: Combine the background video and TTS audio.Captioning: Add dynamic captions to the assembled video.Finalize: Update the Baserow record with the final video URL and status.⚙️ Detailed Node BreakdownNode NameTypeDescriptionForm (Trigger)formTriggerStarts the workflow. Collects the video's Title, Body script, an uploaded Video (background), and a Voice selection.Video Uploaders3Uploads the user-provided background video (video) to the nca-toolkit MinIO/S3 bucket with a filename based on the submission time (e.g., bg_{{ $json.submittedAt }}.mp4).Saving input to baserowbaserowCreates a new record in the Baserow table to log the execution, video URL, title, body, and set the status to Incomplete.Mix voiceshttpRequestCalls the external TTS API (/v1/audio/speech) to generate audio for the combined Title and Body text, using the selected Voice.Upload TTS audios3Uploads the generated TTS audio file to the nca-toolkit S3 bucket.Update BaserowbaserowUpdates the Baserow record with the URL of the newly generated TTS audio.Getting rowsbaserowRetrieves the necessary data (background video URL, audio URL) from the Baserow table based on the current execution ID.Combine ClipshttpRequestCalls the FFmpeg composition service (/v1/ffmpeg/compose) to combine the background video and the TTS audio. Crucially, it scales the video to 1080x1920 (vertical format).Add captionhttpRequestCalls the captioning service (/v1/video/caption) to add highlighted, dynamic subtitles (using The Bold Font at the bottom_center position) to the combined video. It also includes a basic profanity replacement filter.Add final video to baserowbaserowMarks the record as Completed and saves the final captioned video URL back into the Baserow database.
+# 🎥 Reddit → Short-Form Video Generation Workflow  
+Automated TTS + Captions + Video Composition (n8n)
+
+This n8n workflow automatically creates polished, short-form videos (TikTok, Reels, Shorts) from text inputs.  
+It combines a user-uploaded background video with Text-to-Speech audio and auto-generated captions—then saves the final video URL to Baserow.
+
+---
+
+## 📌 Workflow Name
+**Reddit - Video**
+
+---
+
+## 🚀 Purpose
+Generate high-quality, vertically oriented **1080×1920** videos by combining:
+
+- A user-uploaded background video  
+- Text-to-Speech audio (from Title + Body script)  
+- Automatically generated dynamic captions  
+- (Optional) a title card  
+- Automatic logging to Baserow
+
+---
+
+## 🛠️ Prerequisites
+
+### Platforms / Services Required
+- **n8n Instance** – to execute the workflow  
+- **S3 / MinIO Storage** – stores:  
+  - Uploaded background video  
+  - Generated TTS audio  
+  - Final rendered video  
+- **Baserow Database** – tracks each video's processing status & URLs
+
+### External Media Processing APIs
+These endpoints require an `x-api-key` header:
+
+| Purpose | Endpoint |
+|--------|----------|
+| Text-to-Speech | `http://173.249.21.108:8880/v1/audio/speech` |
+| FFmpeg Video Composition | `http://173.249.21.108:8080/v1/ffmpeg/compose` |
+| Caption Generation | `http://173.249.21.108:8080/v1/video/caption` |
+
+---
+
+## 🔄 High-Level Workflow Steps
+
+1. **Input & Upload**  
+   User submits Title, Body text, voice selection, and background video.
+
+2. **Database Tracking**  
+   Creates a new row in Baserow, sets status to **Incomplete**.
+
+3. **TTS Audio Creation**  
+   Title + Body → TTS API → audio file.
+
+4. **Video Assembly**  
+   Background video + audio are merged using FFmpeg  
+   Output video is scaled to **1080×1920 (vertical)**.
+
+5. **Captioning**  
+   Dynamic subtitles are added using captioning API  
+   (The Bold Font, bottom-center, profanity filtered).
+
+6. **Finalization**  
+   Final video uploaded to S3  
+   Baserow record updated to **Completed** with final URL.
+
+---
+
+## ⚙️ Node Breakdown
+
+| Node Name | Type | Description |
+|-----------|------|-------------|
+| **Form (Trigger)** | formTrigger | Collects Title, Body, Voice, and Background Video. |
+| **Video Uploader** | s3 | Uploads background video to S3 as `bg_<submittedAt>.mp4`. |
+| **Saving input to Baserow** | baserow | Creates Baserow record with title, body, video URL, and status `Incomplete`. |
+| **Mix voices** | httpRequest | Sends Title + Body text to TTS API to generate voice audio. |
+| **Upload TTS audio** | s3 | Uploads generated TTS audio to S3. |
+| **Update Baserow** | baserow | Updates row with TTS audio URL. |
+| **Getting rows** | baserow | Fetches video + audio URLs needed for video processing. |
+| **Combine Clips** | httpRequest | Uses FFmpeg API to merge video + audio and format to 1080×1920. |
+| **Add caption** | httpRequest | Creates dynamic captions using caption API (bottom-center, highlighted). |
+| **Add final video to Baserow** | baserow | Updates record to `Completed` and adds final video URL. |
+
+---
+
+## ✅ Summary
+This workflow automates the entire short-form content creation process—from raw text + video input to a fully edited, captioned final video, ready for TikTok/Reels/Shorts.
+
