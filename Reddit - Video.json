@@ -1,0 +1,1369 @@
+{
+  "name": "Reddit - Video",
+  "nodes": [
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": [\n    {\n      \"file_url\": \"{{ $json.background_video_url }}\"\n    },\n    {\n      \"file_url\": \"{{ $json.body_audio_url }}\"\n    }\n  ],\n  \"filters\": [\n    {\n      \"filter\": \"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v];[1:a]volume=1[a]\"\n    }\n  ],\n  \"outputs\": [\n    {\n      \"options\": [\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[v]\"\n        },\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[a]\"\n        },\n        {\n          \"option\": \"-c:v\",\n          \"argument\": \"libx264\"\n        },\n        {\n          \"option\": \"-c:a\",\n          \"argument\": \"aac\"\n        },\n        {\n          \"option\": \"-shortest\"\n        }\n      ]\n    }\n  ],\n  \"id\": \"tts-overlay-video-1080x1920\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        240,
+        1344
+      ],
+      "id": "2174d52e-0f2b-4686-b6ea-360c6b52db3e",
+      "name": "Combine Clips",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "formTitle": "Enter the text title and bodt",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "body",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "video",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Voice ",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "af_alloy"
+                  },
+                  {
+                    "option": "af_jessica"
+                  },
+                  {
+                    "option": "af_nova"
+                  },
+                  {
+                    "option": "am_liam"
+                  },
+                  {
+                    "option": "am_michael"
+                  },
+                  {
+                    "option": "af_alloy(0.1)+am_adam(0.9)"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -624,
+        1248
+      ],
+      "id": "84bf7afa-7b73-4546-9cfe-6b0d874476ae",
+      "name": "Form",
+      "webhookId": "9b5c9f3d-1dde-467c-95b1-1a5bdd947d25",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "=nca-toolkit",
+        "fileName": "=bg_{{ $json.submittedAt }}.mp4",
+        "binaryData": "={{ true }}",
+        "binaryPropertyName": "video",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        208,
+        784
+      ],
+      "id": "646d130b-7997-4ffb-ac34-8e7c1afde41b",
+      "name": "Video Uploader",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "s3": {
+          "id": "xJuc5BeIqlVUScyU",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 174,
+        "tableId": 698,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6766,
+              "fieldValue": "=http://minio:9000/nca-toolkit/bg_{{ $('Form').item.json.submittedAt }}.mp4"
+            },
+            {
+              "fieldId": 6763,
+              "fieldValue": "={{ $('Form').item.json.title }}"
+            },
+            {
+              "fieldId": 6764,
+              "fieldValue": "={{ $('Form').item.json.body }}"
+            },
+            {
+              "fieldId": 6770,
+              "fieldValue": "={{ $('Form').item.json.submittedAt }}"
+            },
+            {
+              "fieldId": 6762,
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": 6765,
+              "fieldValue": "Incomplete"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        432,
+        784
+      ],
+      "id": "c4f4ec4c-34cb-4da1-9a3b-d11e55e5cf83",
+      "name": "Saving input to baserow",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"kokoro\",\n  \"input\": \"{{  $('Form').item.json.title}}, {{ $('Form').item.json.body }}\",\n  \"voice\": \"{{ $('Form').item.json['Voice '] }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        16,
+        1040
+      ],
+      "id": "21eac12b-aba4-4650-b51d-09216a896a22",
+      "name": "Mix voices",
+      "notesInFlow": true,
+      "notes": "/v1/audio/speech"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "nca-toolkit",
+        "fileName": "=audio_{{ $('Form').item.json.submittedAt}}.mp3",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        240,
+        1040
+      ],
+      "id": "20a70332-e345-4f0d-a035-fc38d0f59f80",
+      "name": "Upload TTS audio",
+      "alwaysOutputData": true,
+      "credentials": {
+        "s3": {
+          "id": "xJuc5BeIqlVUScyU",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 174,
+        "tableId": 698,
+        "rowId": "={{ $('Saving input to baserow').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6768,
+              "fieldValue": "=http://minio:9000/nca-toolkit/audio_{{ $('Form').item.json.submittedAt }}.mp3"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        464,
+        1040
+      ],
+      "id": "0b4f389c-754e-4514-b607-70b727e3738c",
+      "name": "Update Baserow",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "databaseId": 174,
+        "tableId": 698,
+        "returnAll": true,
+        "additionalOptions": {
+          "filters": {
+            "fields": [
+              {
+                "field": 6762,
+                "value": "={{ $execution.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -48,
+        1344
+      ],
+      "id": "bc06292c-6936-4621-a871-91bd357ba24f",
+      "name": "Getting rows",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/video/caption",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"video_url\": \"{{ $('Combine Clips').item.json.response[0].file_url }}\",\n    \"replace\": [\n        {\n            \"find\": \"fuck\",\n            \"replace\": \"#$%#$#%$#%\"\n        }\n    ],\n    \"settings\": {\n        \"line_color\": \"#FFFFFF\",\n        \"word_color\": \"#FFFF00\",\n        \"all_caps\": false,\n        \"max_words_per_line\": 3,\n        \"font_size\": 60,\n        \"bold\": false,\n        \"italic\": false,\n        \"underline\": false,\n        \"strikeout\": false,\n        \"outline_width\": 3,\n        \"shadow_offset\": 4,\n        \"style\": \"highlight\",\n        \"font_family\": \"The Bold Font\",\n        \"position\": \"bottom_center\"\n    },\n    \"id\": \"gdrive-five\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        32,
+        1632
+      ],
+      "id": "567146af-8ba1-46e7-a398-f65dcc28daa8",
+      "name": "Add caption"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 174,
+        "tableId": 698,
+        "rowId": "={{ $('Saving input to baserow').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6765,
+              "fieldValue": "=Completed"
+            },
+            {
+              "fieldId": 6769,
+              "fieldValue": "={{ $json.response }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        272,
+        1632
+      ],
+      "id": "c3ade076-3c77-4654-b353-e96de84b2ded",
+      "name": "Add final video to baserow",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "tts model",
+        "height": 176,
+        "width": 768,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        1008
+      ],
+      "id": "055e028c-1ba1-4d2d-b8f3-a9befbed0cb2",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "saving input in minio",
+        "height": 176,
+        "width": 768,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        784
+      ],
+      "id": "38b246d2-623e-484f-ac30-89c1646e9230",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "combining tts audio with background video and saving it to minio",
+        "height": 224,
+        "width": 768,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        1280
+      ],
+      "id": "f90bd2b2-4f2d-4548-94a9-55e500b47d12",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "Adding captions",
+        "height": 224,
+        "width": 768,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -112,
+        1584
+      ],
+      "id": "356587cf-d507-4e73-af16-2650c9323581",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "Input Form",
+        "height": 224,
+        "width": 272,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -704,
+        1184
+      ],
+      "id": "afe8da1d-f703-48d0-a54d-e65db74a592b",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "formTitle": "Enter the text title and bodt",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "title",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "body",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "video",
+              "fieldType": "file",
+              "multipleFiles": false,
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Voice ",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "af_alloy"
+                  },
+                  {
+                    "option": "af_jessica"
+                  },
+                  {
+                    "option": "af_nova"
+                  },
+                  {
+                    "option": "am_liam"
+                  },
+                  {
+                    "option": "am_michael"
+                  },
+                  {
+                    "option": "af_alloy(0.1)+am_adam(0.9)"
+                  }
+                ]
+              },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.3,
+      "position": [
+        -7824,
+        1328
+      ],
+      "id": "2bc05458-0f8c-4920-a809-403c01e06cdf",
+      "name": "Form1",
+      "webhookId": "a4de1b71-3107-4af7-8435-42611f5e2b19",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"kokoro\",\n  \"input\": \"{{  $('Form1').item.json.title}}\",\n  \"voice\": \"{{ $('Form1').item.json['Voice '] }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -7360,
+        1312
+      ],
+      "id": "f056f0f1-d39c-471f-b5ff-379310ae898c",
+      "name": "Mix voices1",
+      "notesInFlow": true,
+      "notes": "/v1/audio/speech"
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "nca-toolkit",
+        "fileName": "=audio_{{ $('Form1').item.json.submittedAt}}.mp3",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        -7200,
+        1312
+      ],
+      "id": "8c46b221-e19f-4392-ae93-c79aa9c31a17",
+      "name": "Upload TTS audio1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "s3": {
+          "id": "xJuc5BeIqlVUScyU",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 174,
+        "tableId": 698,
+        "rowId": "={{ $('Saving input to baserow1').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6773,
+              "fieldValue": "=http://minio:9000/nca-toolkit/audio_{{ $('Form1').item.json.submittedAt }}.mp3"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -6944,
+        1312
+      ],
+      "id": "0f615066-6c13-4253-aa74-90fe84dcf656",
+      "name": "Update Baserow1",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "databaseId": 174,
+        "tableId": 698,
+        "returnAll": true,
+        "additionalOptions": {
+          "filters": {
+            "fields": [
+              {
+                "field": 6762,
+                "value": "={{ $execution.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -7360,
+        1584
+      ],
+      "id": "b6b4c504-0003-43a5-8252-d9fdc95ac7f0",
+      "name": "Getting rows1",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/video/caption",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"video_url\": \"{{ $json.response[0].file_url }}\",\n    \"replace\": [\n        {\n            \"find\": \"fuck\",\n            \"replace\": \"#$%#$#%$#%\"\n        }\n    ],\n    \"settings\": {\n        \"line_color\": \"#FFFFFF\",\n        \"word_color\": \"#FFFF00\",\n        \"all_caps\": false,\n        \"max_words_per_line\": 3,\n        \"font_size\": 60,\n        \"bold\": false,\n        \"italic\": false,\n        \"underline\": false,\n        \"strikeout\": false,\n        \"outline_width\": 3,\n        \"shadow_offset\": 4,\n        \"style\": \"highlight\",\n        \"font_family\": \"The Bold Font\",\n        \"position\": \"bottom_center\"\n    },\n    \"id\": \"gdrive-five\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6080,
+        1312
+      ],
+      "id": "79ee3c6c-6ae9-4044-b97f-b4a802588d19",
+      "name": "Add caption1"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 174,
+        "tableId": 698,
+        "rowId": "={{ $('Saving input to baserow1').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6765,
+              "fieldValue": "=Completed"
+            },
+            {
+              "fieldId": 6769,
+              "fieldValue": "={{ $json.response[0].file_url }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -5280,
+        1472
+      ],
+      "id": "90d25c38-15aa-4013-b709-0c568ca4cd6e",
+      "name": "Add final video to baserow1",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "databaseId": 174,
+        "tableId": 698,
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6766,
+              "fieldValue": "=http://minio:9000/nca-toolkit/bg_{{ $('Form1').item.json.submittedAt }}.mp4"
+            },
+            {
+              "fieldId": 6763,
+              "fieldValue": "={{ $('Form1').item.json.title }}"
+            },
+            {
+              "fieldId": 6764,
+              "fieldValue": "={{ $('Form1').item.json.body }}"
+            },
+            {
+              "fieldId": 6770,
+              "fieldValue": "={{ $('Form1').item.json.submittedAt }}"
+            },
+            {
+              "fieldId": 6762,
+              "fieldValue": "={{ $execution.id }}"
+            },
+            {
+              "fieldId": 6765,
+              "fieldValue": "Incomplete"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -7184,
+        1056
+      ],
+      "id": "b279ff35-de63-4ca9-b6e7-8d7dfff70cc5",
+      "name": "Saving input to baserow1",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "=nca-toolkit",
+        "fileName": "=bg_{{ $json.submittedAt }}.mp4",
+        "binaryData": "={{ true }}",
+        "binaryPropertyName": "video",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        -7360,
+        1056
+      ],
+      "id": "61f71e96-99ca-4773-8707-e66ea63ee126",
+      "name": "Video Uploader1",
+      "retryOnFail": false,
+      "alwaysOutputData": true,
+      "credentials": {
+        "s3": {
+          "id": "xJuc5BeIqlVUScyU",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input text\nlet text =  $input.first().json.title\nlet maxWordsPerLine = 5;\n\n// Split words and create lines\nlet words = text.split(\" \");\nlet lines = [];\nfor (let i = 0; i < words.length; i += maxWordsPerLine) {\n  lines.push(words.slice(i, i + maxWordsPerLine).join(\" \"));\n}\n\n// Join lines with real newlines\nlet wrappedText = lines.join(\"\\n\");\n\n// Escape single quotes for FFmpeg\nwrappedText = wrappedText.replace(/'/g, \"\\\\'\");\n\n// Replace actual newlines with literal \\n\nwrappedText = wrappedText.replace(/\\n/g, \"\\\\n\");\n\n// Return JSON for n8n\nreturn [{ json: { wrappedText } }];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7216,
+        1584
+      ],
+      "id": "1739800e-e153-406b-8374-be19a444fd93",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"inputs\": [\n        {\n            \"file_url\": \"{{ $('Saving input to baserow1').item.json.background_video_url }}\"\n        },\n        {\n            \"file_url\": \"{{ $json.response[0].file_url }}\"\n        }\n    ],\n    \"filters\": [\n        {\n            \"filter\": \"[0:v][1:v]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2+200[outv]\"\n        }\n    ],\n    \"outputs\": [\n        {\n            \"options\": [\n                {\n                    \"option\": \"-map\",\n                    \"argument\": \"[outv]\"\n                },\n                {\n                    \"option\": \"-map\",\n                    \"argument\": \"0:a\"\n                },\n                {\n                    \"option\": \"-c:v\",\n                    \"argument\": \"libx264\"\n                },\n                {\n                    \"option\": \"-c:a\",\n                    \"argument\": \"aac\"\n                },\n                {\n                    \"option\": \"-f\",\n                    \"argument\": \"mp4\"\n                }\n            ]\n        }\n    ],\n    \"id\": \"video-overlay\",\n    \"metadata\": {\n        \"bitrate\": false,\n        \"encoder\": false,\n        \"duration\": false,\n        \"filesize\": false,\n        \"thumbnail\": false\n    }\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6448,
+        1584
+      ],
+      "id": "a810d823-5713-489f-bf94-3f15bc2f00c4",
+      "name": "Combine Clips3",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "=json",
+        "bodyParameters": {
+          "parameters": [
+            {}
+          ]
+        },
+        "jsonBody": "={\n  \"inputs\": [\n    {\n      \"file_url\": \"http://minio:9000/nca-toolkit/comment.png\"\n    }\n  ],\n  \"filters\": [\n    {\n      \"filter\": \"drawtext=text='{{ $('Form1').item.json.title }}':fontsize=20:fontcolor=black:x=(w-text_w)/2:y=(h-text_h)/2:line_spacing=5\"\n    }\n  ],\n  \"outputs\": [\n    {\n      \"options\": [\n        {\n          \"option\": \"-frames:v\",\n          \"argument\": \"1\"\n        },\n        {\n          \"option\": \"-c:v\",\n          \"argument\": \"mjpeg\"\n        },\n        {\n          \"option\": \"-f\",\n          \"argument\": \"image2\"\n        }\n      ]\n    }\n  ],\n  \"id\": \"drawtext-manual-wrap\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6944,
+        1584
+      ],
+      "id": "a1b8e2ba-028f-4c46-bc5c-c9a0838f3af3",
+      "name": "text in image",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8880/v1/audio/speech",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"kokoro\",\n  \"input\": \"{{ $('Form1').item.json.body }}\",\n  \"voice\": \"{{ $('Form1').item.json['Voice '] }}\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6944,
+        1056
+      ],
+      "id": "3eec73c3-c766-411a-b9ed-4b46868a6d0b",
+      "name": "body voice",
+      "notesInFlow": true,
+      "notes": "/v1/audio/speech"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": [\n    {\n      \"file_url\": \"{{ $json.background_video_url }}\"\n    },\n    {\n      \"file_url\": \"{{ $json.body_audio_url }}\"\n    }\n  ],\n  \"filters\": [\n    {\n      \"filter\": \"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v];[1:a]volume=1[a]\"\n    }\n  ],\n  \"outputs\": [\n    {\n      \"options\": [\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[v]\"\n        },\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[a]\"\n        },\n        {\n          \"option\": \"-c:v\",\n          \"argument\": \"libx264\"\n        },\n        {\n          \"option\": \"-c:a\",\n          \"argument\": \"aac\"\n        },\n        {\n          \"option\": \"-shortest\"\n        }\n      ]\n    }\n  ],\n  \"id\": \"tts-overlay-video-1080x1920\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6288,
+        1312
+      ],
+      "id": "5163fd35-a9c0-446d-a9a2-f5c2d1b4382b",
+      "name": "Combine Clips4",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "bucketName": "nca-toolkit",
+        "fileName": "=audio_{{ $('Form1').item.json.submittedAt }}.mp3",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.s3",
+      "typeVersion": 1,
+      "position": [
+        -6448,
+        1056
+      ],
+      "id": "149ae472-83d0-4c81-8bf7-8a67155f73c4",
+      "name": "Upload TTS audio3",
+      "alwaysOutputData": true,
+      "credentials": {
+        "s3": {
+          "id": "xJuc5BeIqlVUScyU",
+          "name": "S3 account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "databaseId": 174,
+        "tableId": 698,
+        "rowId": "={{ $('Saving input to baserow1').item.json.id }}",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": 6768,
+              "fieldValue": "=http://minio:9000/nca-toolkit/audio_{{ $('Form1').item.json.submittedAt }}.mp3"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -6288,
+        1056
+      ],
+      "id": "a346b3f4-14fe-4ef9-af7e-209129e30683",
+      "name": "Update Baserow3",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "databaseId": 174,
+        "tableId": 698,
+        "returnAll": true,
+        "additionalOptions": {
+          "filters": {
+            "fields": [
+              {
+                "field": 6762,
+                "value": "={{ $execution.id }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.baserow",
+      "typeVersion": 1,
+      "position": [
+        -6448,
+        1312
+      ],
+      "id": "47551858-99e6-4383-901a-438d07fe4d3e",
+      "name": "Getting rows3",
+      "credentials": {
+        "baserowApi": {
+          "id": "snPhmrNiKCvSfUkr",
+          "name": "Baserow account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n    \"inputs\": [\n        {\n            \"file_url\": \"{{ $('title image').item.json.response[0].file_url }}\"\n        },\n        {\n            \"file_url\": \"{{ $('Add caption1').item.json.response }}\"    }\n    ],\n    \"filters\": [\n        {\n            \"filter\": \"[0:v][0:a][1:v][1:a]concat=n=2:v=1:a=1[outv][outa]\"\n        }\n    ],\n    \"outputs\": [\n        {\n            \"options\": [\n                {\n                    \"option\": \"-map\",\n                    \"argument\": \"[outv]\"\n                },\n                {\n                    \"option\": \"-map\",\n                    \"argument\": \"[outa]\"\n                },\n                {\n                    \"option\": \"-c:v\",\n                    \"argument\": \"libx264\"\n                },\n                {\n                    \"option\": \"-crf\",\n                    \"argument\": \"23\"\n                },\n                {\n                    \"option\": \"-preset\",\n                    \"argument\": \"medium\"\n                },\n                {\n                    \"option\": \"-c:a\",\n                    \"argument\": \"aac\"\n                },\n                {\n                    \"option\": \"-b:a\",\n                    \"argument\": \"128k\"\n                }\n            ]\n        }\n    ],\n    \"metadata\": {\n        \"thumbnail\": true,\n        \"filesize\": true,\n        \"duration\": true,\n        \"bitrate\": true,\n        \"encoder\": true\n    },\n    \"id\": \"2323\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -5536,
+        1472
+      ],
+      "id": "aa147c52-9ff0-47d8-99e5-f4961a9b8c9d",
+      "name": "Combine Clips5",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -5744,
+        1472
+      ],
+      "id": "dc7a17b2-465b-4251-9cb1-f873ca17e9b9",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://173.249.21.108:8080/v1/ffmpeg/compose",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "ranemedia_nca_83jdhf92H"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"inputs\": [\n    {\n      \"file_url\": \"{{ $json.response[0].file_url }}\"\n    },\n    {\n      \"file_url\": \"{{ $('Update Baserow1').item.json.title_audio_url }}\"\n    }\n  ],\n  \"filters\": [\n    {\n      \"filter\": \"[0:v]scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2,setsar=1[v];[1:a]volume=1[a]\"\n    }\n  ],\n  \"outputs\": [\n    {\n      \"options\": [\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[v]\"\n        },\n        {\n          \"option\": \"-map\",\n          \"argument\": \"[a]\"\n        },\n        {\n          \"option\": \"-c:v\",\n          \"argument\": \"libx264\"\n        },\n        {\n          \"option\": \"-c:a\",\n          \"argument\": \"aac\"\n        },\n        {\n          \"option\": \"-shortest\"\n        }\n      ]\n    }\n  ],\n  \"id\": \"tts-overlay-video-1080x1920\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        -6288,
+        1584
+      ],
+      "id": "21976b12-9fd8-4cad-9585-320085670745",
+      "name": "title image",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "content": "Form",
+        "width": 192
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -7872,
+        1296
+      ],
+      "id": "7e5bf57c-10bc-4a6b-b3c0-33c556d57919",
+      "name": "Sticky Note5"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Combine Clips": {
+      "main": [
+        [
+          {
+            "node": "Add caption",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form": {
+      "main": [
+        [
+          {
+            "node": "Video Uploader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Uploader": {
+      "main": [
+        [
+          {
+            "node": "Saving input to baserow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Saving input to baserow": {
+      "main": [
+        [
+          {
+            "node": "Mix voices",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mix voices": {
+      "main": [
+        [
+          {
+            "node": "Upload TTS audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload TTS audio": {
+      "main": [
+        [
+          {
+            "node": "Update Baserow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Baserow": {
+      "main": [
+        [
+          {
+            "node": "Getting rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Getting rows": {
+      "main": [
+        [
+          {
+            "node": "Combine Clips",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add caption": {
+      "main": [
+        [
+          {
+            "node": "Add final video to baserow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Form1": {
+      "main": [
+        [
+          {
+            "node": "Video Uploader1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mix voices1": {
+      "main": [
+        [
+          {
+            "node": "Upload TTS audio1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload TTS audio1": {
+      "main": [
+        [
+          {
+            "node": "Update Baserow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Baserow1": {
+      "main": [
+        [
+          {
+            "node": "Getting rows1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Getting rows1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add caption1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Saving input to baserow1": {
+      "main": [
+        [
+          {
+            "node": "Mix voices1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "body voice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Uploader1": {
+      "main": [
+        [
+          {
+            "node": "Saving input to baserow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "text in image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "text in image": {
+      "main": [
+        [
+          {
+            "node": "Combine Clips3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Clips3": {
+      "main": [
+        [
+          {
+            "node": "title image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "body voice": {
+      "main": [
+        [
+          {
+            "node": "Upload TTS audio3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload TTS audio3": {
+      "main": [
+        [
+          {
+            "node": "Update Baserow3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Baserow3": {
+      "main": [
+        [
+          {
+            "node": "Getting rows3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Getting rows3": {
+      "main": [
+        [
+          {
+            "node": "Combine Clips4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Clips4": {
+      "main": [
+        [
+          {
+            "node": "Add caption1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Clips5": {
+      "main": [
+        [
+          {
+            "node": "Add final video to baserow1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Combine Clips5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "title image": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e1d74b00-cbe1-45f6-98c9-5cbbf80dfae9",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3949c74b74bfcff3fedfd5aebbe11e618057e4012044e1fecf2994fd9ef20b54"
+  },
+  "id": "QxtBGH4QJSP9eNU1",
+  "tags": []
+}
